@@ -1,0 +1,105 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(tidyverse)
+library(htmltools)
+library(rvest)
+library(jsonlite)
+library(rjson)
+```
+
+
+```{r}
+base_path <- "https://www.bytbil.com/bil?Makes[0]=Volvo&Models[0]=V70&OnlyNew=False&OnlyWarrantyProgram=False&OnlyEnvironmentFriendly=False&OnlyFourWheelDrive=False&OnlyReducedPrice=False&OnlyDeductibleVAT=False&OnlyIsAuction=False&OnlyAuthorizedDealers=False&OnlyHasImage=False&OnlyHasVideo=False&OnlyHasCarfaxReport=False&OnlyNoBonusMalus=False&Page=%s&IgnoreSortFiltering=False"
+
+path_v70 <- "https://www.bytbil.com/bil?Makes[0]=Volvo&Models[0]=V70&ModelYearRange.From=%s&OnlyNew=False&OnlyWarrantyProgram=False&OnlyEnvironmentFriendly=False&OnlyFourWheelDrive=False&OnlyReducedPrice=False&OnlyDeductibleVAT=False&OnlyIsAuction=False&OnlyAuthorizedDealers=False&OnlyHasImage=False&OnlyHasVideo=False&OnlyHasCarfaxReport=False&OnlyNoBonusMalus=False&Page=2&IgnoreSortFiltering=False"
+
+dir.create("pages")
+sprint_path <- "pages/%s/volvov70_%s.html"
+
+per_page <- 24
+
+entries_per_year <- list(
+  `2010`=677,
+  `2011`=584,
+  `2012`=450,
+  `2013`=368,
+  `2014`=274,
+  `2015`=192,
+  `2016`=103
+)
+
+lapply(2010:2016, function(year) {
+  
+  total_entries <- entries_per_year[[as.character(year)]]
+  max_index <- ceiling(total_entries / per_page)
+  
+  dir.create(sprintf("pages/%s", year))
+
+  lapply(1:max_index, function(i) {
+    print(i)
+    page_url <- sprintf(path_v70, year, i)
+    path <- sprintf(sprint_path, year, i)
+    print(path)
+    # print("Comment out to activate")
+    download.file(page_url, path)
+  })
+})
+
+
+
+full_df <- map_df(2010:2016, function(year) {
+  
+  total_entries <- entries_per_year[[as.character(year)]]
+  max_index <- ceiling(total_entries / per_page)
+
+  df <- map_df(1:max_index, function(i, year) {
+    data <- read_html(sprintf(sprint_path, year, i))
+    node <- html_nodes(data, "script")[4] %>% html_text() %>% trimws() %>% gsub("dataLayer.push\\(", "", .) %>% gsub("\\)$", "", .) %>% gsub(");.*", "", .) %>% gsub("'", "\"", .)
+    
+    first_data <- jsonlite::parse_json(as.character(node))
+    
+    df <- first_data$ecommerce$impressions %>% map_df(function(entry) {
+      entry
+      # data.frame(name=entry$name)
+    })
+    df %>% mutate(year=year)
+  }, year=year)
+  
+  df
+})%>% mutate(price=as.numeric(price)) %>% mutate(miles=as.numeric(dimension2))
+
+v70_df <- dfs %>% do.call("rbind", .)
+```
+
+
+
+```{r}
+v70_df %>% filter(price < 50000)
+```
+
+
+```{r fig.width=12,fig.height=8}
+v70_df %>% ggplot(aes(x=price)) + geom_histogram(bins=50) + theme_bw()
+
+full_df %>% filter(miles < 100000) %>% ggplot(aes(x=miles, y=price, color=as.factor(year))) + geom_point(bins=50) + theme_bw() + facet_wrap(year~.) + ggtitle("Volvo V70 price (SEK) vs miles (10x km) per year")
+
+
+```
+
+
+Node
+
+fs.readFile('testtext.txt', 'utf8', (err, data) => { storage = data })
+JSON.parse(storage.replace(/'/g, '"').slice(0, 8374))
+
+
+
+```{r}
+```
+
+
