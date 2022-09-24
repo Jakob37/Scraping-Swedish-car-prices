@@ -4,7 +4,7 @@ This code use R to extract information from a Swedish website for second hand ca
 
 The example below is for Volvo V70 (September 2022), but can of course be adapted to any car.
 
-![Price overview](figures/volvo_v70_2010_2016.png)
+![Price overview](figures/volvo_prices_over_years.png)
 
 Next:
 
