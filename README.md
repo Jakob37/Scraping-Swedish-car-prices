@@ -1,4 +1,4 @@
-I wanted to get an overview of reasonable car prices for Volvo V70 in relation to year and mileage (in Sweden).
+I wanted to get an overview of reasonable car prices in relation to year and mileage (in Sweden).
 
 This code use R to extract information from a Swedish website for second hand cars (bytbil.com).
 
